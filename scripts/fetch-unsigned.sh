@@ -57,17 +57,14 @@ fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-unsigned PRNS-Contro
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 unzip -q "$out/windows/PRNS-Controller-windows-unsigned.zip" -d "$work/windows"
-firmware="$(find "$work/windows" -type d -name firmware | head -n 1)"
-if [[ -z "$firmware" || ! -f "$firmware/bundle.json" ]]; then
-    echo "error: Windows package has no firmware/bundle.json (empty flash collection)" >&2
+flash="$(find "$work/windows" -type f -name 'hopspot-flash.exe' | head -n 1)"
+if [[ -z "$flash" ]]; then
+    echo "error: Windows package has no hopspot-flash.exe" >&2
     exit 1
 fi
-bytes=0
-while IFS= read -r -d '' firmware_file; do
-    bytes=$((bytes + $(wc -c <"$firmware_file")))
-done < <(find "$firmware" -type f -print0)
-if [[ "$bytes" -lt 4096 ]]; then
-    echo "error: Windows firmware tree is only ${bytes} bytes" >&2
+flash_bytes="$(wc -c <"$flash" | tr -d '[:space:]')"
+if [[ "$flash_bytes" -lt 1000000 ]]; then
+    echo "error: hopspot-flash.exe is only ${flash_bytes} bytes" >&2
     exit 1
 fi
 

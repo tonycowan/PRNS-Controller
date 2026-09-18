@@ -36,9 +36,9 @@ Produced by Prns workflows (fork-side today):
 uploaded the artifacts above **for that same SHA**. Record the SHA, run IDs,
 and SHA-256 digests in every Release.
 
-Known gap: some Windows packages embedded an empty flash collection (~206
-bytes). `release.yml` rejects a Windows archive whose `firmware/` tree is
-missing or smaller than 4 KiB, so that build cannot be published.
+Known gap: a separate CI artifact named `inspect-windows` has come down empty (206 bytes, one directory entry). The shippable `PRNS-Controller-windows-unsigned.zip` from the same effort was not empty. `release.yml` checks that zip for a real `hopspot-flash.exe`, not for an embedded `firmware/` tree.
+
+Linux desktop builds need host libraries the tarball does not mention (`libxdo.so.3` and the GTK/WebKit stack). See `notes/package-trial-2026-09-18.md`.
 
 ## Actions secrets and variables
 
