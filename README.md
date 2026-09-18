@@ -38,7 +38,14 @@ and SHA-256 digests in every Release.
 
 Known gap: a separate CI artifact named `inspect-windows` has come down empty (206 bytes, one directory entry). The shippable `PRNS-Controller-windows-unsigned.zip` from the same effort was not empty. `release.yml` checks that zip for a real `hopspot-flash.exe`, not for an embedded `firmware/` tree.
 
-Linux desktop builds need host libraries the tarball does not mention (`libxdo.so.3` and the GTK/WebKit stack). See `notes/package-trial-2026-09-18.md`.
+## Open from the 2026-09-18 trial
+
+Detail is in `notes/package-trial-2026-09-18.md`. These are not release-shell work.
+
+- Linux desktop needs `libxdo` and the GTK/WebKit libraries, and the tarball never says so. Add a note in the archive, or a launcher that checks for them.
+- Windows USB Auto stays silent in the UI when `adb` holds the phone (Windows error 5) or the accessory interface is not bound to WinUSB. The log already has the reason. Show it on the interface card. Operator docs should cover `adb kill-server` and the WinUSB binding order.
+- The 64×128 pairing code is too small, and the screen does not show time remaining. A slow entry and a rejection look the same.
+- Pixel Controller aborted twice in `WryActivity_create` on launch. One restore after an adoption attempt logged `persistence_restored` with `dropped=1`.
 
 ## Actions secrets and variables
 
