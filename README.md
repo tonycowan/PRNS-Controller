@@ -40,30 +40,29 @@ Known gap: some Windows packages embedded an empty flash collection (~206
 bytes). `release.yml` rejects a Windows archive whose `firmware/` tree is
 missing or smaller than 4 KiB, so that build cannot be published.
 
-## Actions secrets
+## Actions secrets and variables
 
-Credentials are **not** stored in git. Add them under this repository’s
-Settings → Secrets and variables → Actions. Workflows receive them only as
-job environment variables.
+Credentials are **not** stored in git. Secrets are encrypted and masked in logs. Variables are plain configuration, visible to people who can see the repository settings.
 
-Required to download unsigned artifacts from `tonycowan/Prns`:
+**Secrets**
 
-| Secret | Purpose |
-|--------|---------|
+| Name | Purpose |
+|------|---------|
 | `PRNS_ACTIONS_TOKEN` | Token with Actions read access on `tonycowan/Prns` |
-
-Required to Developer ID-sign and notarize the macOS app (omit all of these
-only when dispatching with `sign_macos=false`):
-
-| Secret | Purpose |
-|--------|---------|
 | `APPLE_CERTIFICATE_P12_BASE64` | Developer ID Application `.p12`, base64 |
 | `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
+| `APPLE_API_KEY_BASE64` | App Store Connect API key (`.p8`), base64 |
+
+**Variables**
+
+| Name | Purpose |
+|------|---------|
 | `APPLE_SIGNING_IDENTITY` | `Developer ID Application: … (TEAMID)` |
 | `APPLE_TEAM_ID` | Apple team ID |
-| `APPLE_API_KEY_BASE64` | App Store Connect API key (`.p8`), base64 |
-| `APPLE_API_KEY_ID` | Key ID |
-| `APPLE_API_ISSUER` | Issuer ID |
+| `APPLE_API_KEY_ID` | App Store Connect key ID |
+| `APPLE_API_ISSUER` | App Store Connect issuer ID |
+
+`PRNS_ACTIONS_TOKEN` is required for every run. The Apple secrets and variables are required only when `sign_macos=true`.
 
 `release.yml` publishes a GitHub Release only when it runs on `main` and
 `publish=true`. Develop the workflow on `trunk`; promote to `main` before

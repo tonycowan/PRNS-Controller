@@ -5,7 +5,7 @@ set -euo pipefail
 require() {
     local name="$1"
     if [[ -z "${!name:-}" ]]; then
-        echo "error: Actions secret $name is not set" >&2
+        echo "error: $name is not set" >&2
         exit 1
     fi
 }
