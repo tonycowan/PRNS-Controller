@@ -1,0 +1,134 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prns_sha:
+        description: Prns commit SHA that produced all three unsigned artifacts
+        required: true
+        type: string
+      macos_run_id:
+        description: tonycowan/Prns run ID for controller-macos-package
+        required: true
+        type: string
+      linux_run_id:
+        description: tonycowan/Prns run ID for controller-linux-package
+        required: true
+        type: string
+      windows_run_id:
+        description: tonycowan/Prns run ID for controller-windows-package
+        required: true
+        type: string
+      tag:
+        description: Release tag to create (for example v0.1.0). Required when publish is true.
+        required: false
+        type: string
+      sign_macos:
+        description: Developer ID-sign and notarize the macOS app
+        required: true
+        type: boolean
+        default: true
+      publish:
+        description: Create a GitHub Release. Allowed only on main.
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: fetch, verify, sign
+    runs-on: ${{ inputs.sign_macos == true && 'macos-14' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Require a tag before publish
+        if: inputs.publish == true && inputs.tag == ''
+        run: |
+          echo "publish=true requires a tag" >&2
+          exit 1
+
+      - name: Publish only from main
+        if: inputs.publish == true && github.ref != 'refs/heads/main'
+        run: |
+          echo "publish=true is only allowed on main (this ref is ${{ github.ref }})" >&2
+          exit 1
+
+      - name: Fetch and verify unsigned packages
+        env:
+          GH_TOKEN: ${{ secrets.PRNS_ACTIONS_TOKEN }}
+          PRNS_SHA: ${{ inputs.prns_sha }}
+          MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+          LINUX_RUN_ID: ${{ inputs.linux_run_id }}
+          WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+        run: bash scripts/fetch-unsigned.sh
+
+      - name: Sign and notarize macOS
+        if: inputs.sign_macos == true
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: bash scripts/sign-macos.sh
+
+      - name: Collect release assets
+        run: bash scripts/collect-assets.sh
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-assets
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: GitHub Release
+    needs: prepare
+    if: inputs.publish == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-assets
+          path: dist
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          PRNS_SHA: ${{ inputs.prns_sha }}
+          MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+          LINUX_RUN_ID: ${{ inputs.linux_run_id }}
+          WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          SIGN_MACOS: ${{ inputs.sign_macos }}
+        run: |
+          notes="$(mktemp)"
+          {
+            echo "Prns SHA: \`$PRNS_SHA\`"
+            echo
+            echo "Unsigned Actions runs on \`tonycowan/Prns\`:"
+            echo
+            echo "- macOS: $MACOS_RUN_ID"
+            echo "- Linux: $LINUX_RUN_ID"
+            echo "- Windows: $WINDOWS_RUN_ID"
+            echo
+            if [ "$SIGN_MACOS" = "true" ]; then
+              echo "macOS app is Developer ID-signed and notarized."
+            else
+              echo "macOS app is **unsigned**. Remove the quarantine attribute or use right-click → Open."
+            fi
+            echo
+            echo '```'
+            cat dist/SHA256SUMS
+            echo '```'
+          } >"$notes"
+          gh release create "$TAG" dist/* \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --notes-file "$notes"

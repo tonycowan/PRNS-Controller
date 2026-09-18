@@ -32,34 +32,39 @@ Produced by Prns workflows (fork-side today):
 - `controller-linux-package`
 - `controller-windows-package`
 
-**Pin (preferred):** a Prns **git tag** (or immutable commit SHA) on
-`tonycowan/Prns` that includes the packagers, plus the three successful Actions
-runs that uploaded the artifacts above for that ref.
+**Pin:** one Prns commit SHA, plus the three successful Actions run IDs that
+uploaded the artifacts above **for that same SHA**. Record the SHA, run IDs,
+and SHA-256 digests in every Release.
 
-**Pin (interim):** an explicit Actions run ID per platform while packaging still
-lives on a WIP/fork branch (`wip/controller-packages-on-ken` / portable-package
-CI). Record the Prns SHA and run IDs in the Release notes for every product
-release.
+Known gap: some Windows packages embedded an empty flash collection (~206
+bytes). `release.yml` rejects a Windows archive whose `firmware/` tree is
+missing or smaller than 4 KiB, so that build cannot be published.
 
-Each release in this repo should record:
+## Actions secrets
 
-1. Prns ref (tag or SHA)
-2. macOS / Linux / Windows artifact digests (SHA-256)
-3. Whether the build is unsigned-only or Developer ID + notarized (macOS)
+Credentials are **not** stored in git. Add them under this repository’s
+Settings → Secrets and variables → Actions. Workflows receive them only as
+job environment variables.
 
-## Signing secrets (this repo)
+Required to download unsigned artifacts from `tonycowan/Prns`:
 
-Apple (and later Windows) credentials live as **GitHub Actions secrets on
-`tonycowan/PRNS-Controller`**, not in Prns:
+| Secret | Purpose |
+|--------|---------|
+| `PRNS_ACTIONS_TOKEN` | Token with Actions read access on `tonycowan/Prns` |
 
-- Developer ID Application certificate + notarization (`notarytool`) credentials
-- Optional later: Windows Authenticode
+Required to Developer ID-sign and notarize the macOS app (omit all of these
+only when dispatching with `sign_macos=false`):
 
-Prns keeps producing unsigned archives; this repo downloads, signs/notarizes,
-and publishes Releases from `main`.
+| Secret | Purpose |
+|--------|---------|
+| `APPLE_CERTIFICATE_P12_BASE64` | Developer ID Application `.p12`, base64 |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
+| `APPLE_SIGNING_IDENTITY` | `Developer ID Application: … (TEAMID)` |
+| `APPLE_TEAM_ID` | Apple team ID |
+| `APPLE_API_KEY_BASE64` | App Store Connect API key (`.p8`), base64 |
+| `APPLE_API_KEY_ID` | Key ID |
+| `APPLE_API_ISSUER` | Issuer ID |
 
-## Status
-
-Scaffold only: branch model and artifact contract. Signing workflows and the
-first published Release come next, once a pinned unsigned triple exists for a
-stable Prns ref.
+`release.yml` publishes a GitHub Release only when it runs on `main` and
+`publish=true`. Develop the workflow on `trunk`; promote to `main` before
+cutting a Release.
