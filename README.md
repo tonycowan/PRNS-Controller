@@ -2,6 +2,8 @@
 
 Product surface for **PRNS Controller** downloads, signing, and GitHub Releases.
 
+**[Download the latest release](https://github.com/tonycowan/PRNS-Controller/releases/latest)**
+
 Application source, `hopspot-flash`, firmware trees, and **unsigned** portable
 builds stay in the Prns monorepo (`tonycowan/Prns` packaging workflows for now;
 not landed on KenAKAFrosty/Prns). This repo does **not** rebuild the app from
@@ -18,25 +20,30 @@ Branch names are local to this repo (Ken’s Prns `trunk` is unrelated). Do not 
 
 ## Unsigned artifact contract (Prns → this repo)
 
-Canonical unsigned packages (built in Prns):
+Canonical unsigned packages (built in Prns), one archive per OS × CPU:
 
 | Platform | Artifact name | Archive |
 |----------|---------------|---------|
-| macOS | `PRNS-Controller-macos-unsigned` | `PRNS-Controller-macos-unsigned.zip` |
-| Linux | `PRNS-Controller-linux-unsigned` | `PRNS-Controller-linux-unsigned.tar.gz` |
-| Windows | `PRNS-Controller-windows-unsigned` | `PRNS-Controller-windows-unsigned.zip` |
+| macOS Apple Silicon | `PRNS-Controller-macos-aarch64-unsigned` | `PRNS-Controller-macos-aarch64-unsigned.zip` |
+| macOS Intel | `PRNS-Controller-macos-x86_64-unsigned` | `PRNS-Controller-macos-x86_64-unsigned.zip` |
+| Linux aarch64 | `PRNS-Controller-linux-aarch64-unsigned` | `PRNS-Controller-linux-aarch64-unsigned.tar.gz` |
+| Linux x86_64 | `PRNS-Controller-linux-x86_64-unsigned` | `PRNS-Controller-linux-x86_64-unsigned.tar.gz` |
+| Windows ARM64 | `PRNS-Controller-windows-aarch64-unsigned` | `PRNS-Controller-windows-aarch64-unsigned.zip` |
+| Windows x86_64 | `PRNS-Controller-windows-x86_64-unsigned` | `PRNS-Controller-windows-x86_64-unsigned.zip` |
 
-Produced by Prns workflows (fork-side today):
+Produced by Prns workflows (fork-side today), each uploading **both** arches from one run:
 
-- `controller-macos-package`
-- `controller-linux-package`
-- `controller-windows-package`
+- `controller-macos-package` (`macos-14` + `macos-15-intel`)
+- `controller-linux-package` (`ubuntu-latest` + `ubuntu-24.04-arm`)
+- `controller-windows-package` (`windows-latest` + `windows-11-arm`)
 
 **Pin:** one Prns commit SHA, plus the three successful Actions run IDs that
 uploaded the artifacts above **for that same SHA**. Record the SHA, run IDs,
 and SHA-256 digests in every Release.
 
-Known gap: a separate CI artifact named `inspect-windows` has come down empty (206 bytes, one directory entry). The shippable `PRNS-Controller-windows-unsigned.zip` from the same effort was not empty. `release.yml` checks that zip for a real `hopspot-flash.exe`, not for an embedded `firmware/` tree.
+When `sign_macos=true`, the release attaches `PRNS-Controller-macos-aarch64.zip`
+and `PRNS-Controller-macos-x86_64.zip` (Developer ID + notarized) instead of the
+unsigned macOS zips.
 
 ## Open from the 2026-09-18 trial
 

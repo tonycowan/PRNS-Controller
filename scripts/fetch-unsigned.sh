@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Download a pinned unsigned Controller triple from tonycowan/Prns Actions runs.
+# Download a pinned unsigned Controller matrix from tonycowan/Prns Actions runs.
 set -euo pipefail
 
 : "${GH_TOKEN:?PRNS_ACTIONS_TOKEN is not set}"
@@ -50,15 +50,16 @@ fetch_one() {
     fi
 }
 
-fetch_one macos "$MACOS_RUN_ID" PRNS-Controller-macos-unsigned PRNS-Controller-macos-unsigned.zip
-fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-unsigned PRNS-Controller-linux-unsigned.tar.gz
-fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-unsigned PRNS-Controller-windows-unsigned.zip
+fetch_one macos "$MACOS_RUN_ID" PRNS-Controller-macos-aarch64-unsigned PRNS-Controller-macos-aarch64-unsigned.zip
+fetch_one macos "$MACOS_RUN_ID" PRNS-Controller-macos-x86_64-unsigned PRNS-Controller-macos-x86_64-unsigned.zip
+fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-aarch64-unsigned PRNS-Controller-linux-aarch64-unsigned.tar.gz
+fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-x86_64-unsigned PRNS-Controller-linux-x86_64-unsigned.tar.gz
+fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-aarch64-unsigned PRNS-Controller-windows-aarch64-unsigned.zip
+fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-x86_64-unsigned PRNS-Controller-windows-x86_64-unsigned.zip
 
-# Compress-Archive on Windows stores backslash paths. Do not rely on unzip(1)
-# rewriting them into directories — that differs across Info-ZIP builds and
-# previously failed the release job with a silent pipefail/find miss.
-windows_zip="$out/windows/PRNS-Controller-windows-unsigned.zip"
-flash_bytes="$(
+# Compress-Archive on Windows stores backslash paths. Verify inside the zip.
+verify_windows_flash() {
+    local windows_zip="$1"
     python3 - "$windows_zip" <<'PY'
 import sys
 import zipfile
@@ -71,14 +72,17 @@ with zipfile.ZipFile(path) as archive:
         if info.filename.replace("\\", "/").rstrip("/").endswith("hopspot-flash.exe")
     ]
 if not matches:
-    print("error: Windows package has no hopspot-flash.exe", file=sys.stderr)
+    print(f"error: {path} has no hopspot-flash.exe", file=sys.stderr)
     sys.exit(1)
 size = max(info.file_size for info in matches)
 if size < 1_000_000:
-    print(f"error: hopspot-flash.exe is only {size} bytes", file=sys.stderr)
+    print(f"error: hopspot-flash.exe in {path} is only {size} bytes", file=sys.stderr)
     sys.exit(1)
-print(size)
+print(f"{path}: hopspot-flash.exe {size} bytes")
 PY
-)"
+}
 
-echo "unsigned triple matches $PRNS_SHA (windows hopspot-flash.exe ${flash_bytes} bytes)"
+verify_windows_flash "$out/windows/PRNS-Controller-windows-aarch64-unsigned.zip"
+verify_windows_flash "$out/windows/PRNS-Controller-windows-x86_64-unsigned.zip"
+
+echo "unsigned six-way matrix matches $PRNS_SHA"

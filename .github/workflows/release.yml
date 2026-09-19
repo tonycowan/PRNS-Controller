@@ -119,10 +119,12 @@ jobs:
             echo "- Windows: $WINDOWS_RUN_ID"
             echo
             if [ "$SIGN_MACOS" = "true" ]; then
-              echo "macOS app is Developer ID-signed and notarized."
+              echo "macOS apps (aarch64 + x86_64) are Developer ID-signed and notarized."
             else
-              echo "macOS app is **unsigned**. Remove the quarantine attribute or use right-click → Open."
+              echo "macOS apps are **unsigned**. Remove the quarantine attribute or use right-click → Open."
             fi
+            echo
+            echo "Each OS ships both **aarch64** and **x86_64** archives."
             echo
             echo '```'
             cat dist/SHA256SUMS
