@@ -35,6 +35,26 @@ fi
 printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode >"$work/cert.p12"
 printf '%s' "$APPLE_API_KEY_BASE64" | base64 --decode >"$work/AuthKey.p8"
 
+# Hardened-runtime entitlements for the Dioxus/wry host and helper tools.
+cat >"$work/entitlements.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>com.apple.security.device.bluetooth</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>
+EOF
+
 security create-keychain -p "$keychain_password" "$keychain"
 security set-keychain-settings -lut 21600 "$keychain"
 security unlock-keychain -p "$keychain_password" "$keychain"
@@ -42,20 +62,56 @@ security import "$work/cert.p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD"
 security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain"
 security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
 
-codesign --force --options runtime --timestamp --deep \
-    --sign "$APPLE_SIGNING_IDENTITY" \
-    --keychain "$keychain" \
-    "$app"
+sign_one() {
+    local path="$1"
+    codesign --force --options runtime --timestamp \
+        --entitlements "$work/entitlements.plist" \
+        --sign "$APPLE_SIGNING_IDENTITY" \
+        --keychain "$keychain" \
+        "$path"
+}
+
+# Sign nested Mach-O helpers first (hopspot-flash lives under Resources).
+# Avoid --deep; notarization rejects helpers that were only covered loosely.
+while IFS= read -r -d '' candidate; do
+    if file -b "$candidate" | grep -q 'Mach-O'; then
+        echo "signing nested $(basename "$candidate")"
+        sign_one "$candidate"
+    fi
+done < <(find "$app/Contents" -type f -print0)
+
+sign_one "$app"
 codesign --verify --strict --verbose=2 "$app"
 
 signed_zip="$work/PRNS-Controller-macos.zip"
 ditto -c -k --keepParent "$app" "$signed_zip"
+
+submit_out="$work/notary-submit.txt"
+set +e
 xcrun notarytool submit "$signed_zip" \
     --key "$work/AuthKey.p8" \
     --key-id "$APPLE_API_KEY_ID" \
     --issuer "$APPLE_API_ISSUER" \
     --team-id "$APPLE_TEAM_ID" \
-    --wait
+    --wait | tee "$submit_out"
+submit_status=${PIPESTATUS[0]}
+set -e
+
+submission_id="$(
+    awk '/id:/{print $2; exit}' "$submit_out" || true
+)"
+if [[ "$submit_status" -ne 0 ]] || grep -Eq 'status: Invalid|status: Rejected' "$submit_out"; then
+    echo "error: notarization failed (exit $submit_status)" >&2
+    if [[ -n "$submission_id" ]]; then
+        xcrun notarytool log "$submission_id" \
+            --key "$work/AuthKey.p8" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER" \
+            --team-id "$APPLE_TEAM_ID" || true
+    fi
+    exit 1
+fi
+
 xcrun stapler staple "$app"
 
 rm -f "$zip_path"
