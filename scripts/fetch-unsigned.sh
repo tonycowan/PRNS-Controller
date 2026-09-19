@@ -54,18 +54,31 @@ fetch_one macos "$MACOS_RUN_ID" PRNS-Controller-macos-unsigned PRNS-Controller-m
 fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-unsigned PRNS-Controller-linux-unsigned.tar.gz
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-unsigned PRNS-Controller-windows-unsigned.zip
 
-work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
-unzip -q "$out/windows/PRNS-Controller-windows-unsigned.zip" -d "$work/windows"
-flash="$(find "$work/windows" -type f -name 'hopspot-flash.exe' | head -n 1)"
-if [[ -z "$flash" ]]; then
-    echo "error: Windows package has no hopspot-flash.exe" >&2
-    exit 1
-fi
-flash_bytes="$(wc -c <"$flash" | tr -d '[:space:]')"
-if [[ "$flash_bytes" -lt 1000000 ]]; then
-    echo "error: hopspot-flash.exe is only ${flash_bytes} bytes" >&2
-    exit 1
-fi
+# Compress-Archive on Windows stores backslash paths. Do not rely on unzip(1)
+# rewriting them into directories — that differs across Info-ZIP builds and
+# previously failed the release job with a silent pipefail/find miss.
+windows_zip="$out/windows/PRNS-Controller-windows-unsigned.zip"
+flash_bytes="$(
+    python3 - "$windows_zip" <<'PY'
+import sys
+import zipfile
 
-echo "unsigned triple matches $PRNS_SHA"
+path = sys.argv[1]
+with zipfile.ZipFile(path) as archive:
+    matches = [
+        info
+        for info in archive.infolist()
+        if info.filename.replace("\\", "/").rstrip("/").endswith("hopspot-flash.exe")
+    ]
+if not matches:
+    print("error: Windows package has no hopspot-flash.exe", file=sys.stderr)
+    sys.exit(1)
+size = max(info.file_size for info in matches)
+if size < 1_000_000:
+    print(f"error: hopspot-flash.exe is only {size} bytes", file=sys.stderr)
+    sys.exit(1)
+print(size)
+PY
+)"
+
+echo "unsigned triple matches $PRNS_SHA (windows hopspot-flash.exe ${flash_bytes} bytes)"
