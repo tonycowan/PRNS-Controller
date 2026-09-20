@@ -5,9 +5,9 @@ Product surface for **PRNS Controller** downloads, signing, and GitHub Releases.
 **[Download the latest release](https://github.com/tonycowan/PRNS-Controller/releases/latest)**
 
 Application source, `hopspot-flash`, firmware trees, and **unsigned** portable
-builds stay in the Prns monorepo (`tonycowan/Prns` packaging workflows for now;
-not landed on KenAKAFrosty/Prns). This repo does **not** rebuild the app from
-source for releases.
+builds stay in the Prns monorepo on branch `feat/controller-multi-arch`
+(`tonycowan/Prns` packaging workflows for now; not landed on KenAKAFrosty/Prns).
+This repo does **not** rebuild the app from source for releases.
 
 ## Branches
 
