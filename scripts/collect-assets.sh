@@ -9,6 +9,7 @@ mkdir -p "$dist"
 
 cp "$root"/unsigned/linux/PRNS-Controller-linux-*-unsigned.tar.gz "$dist/"
 cp "$root"/unsigned/windows/PRNS-Controller-windows-*-unsigned.zip "$dist/"
+cp "$root"/unsigned/android/PRNS-Controller-android-*-unsigned.apk "$dist/"
 
 shopt -s nullglob
 signed=( "$root"/unsigned/macos/PRNS-Controller-macos-aarch64.zip \

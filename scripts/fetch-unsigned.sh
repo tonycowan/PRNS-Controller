@@ -7,6 +7,7 @@ set -euo pipefail
 : "${MACOS_RUN_ID:?macos_run_id is required}"
 : "${LINUX_RUN_ID:?linux_run_id is required}"
 : "${WINDOWS_RUN_ID:?windows_run_id is required}"
+: "${ANDROID_RUN_ID:?android_run_id is required}"
 
 repo="tonycowan/Prns"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,7 +36,7 @@ fetch_one() {
         exit 1
     fi
     case "$name" in
-        controller-macos-package|controller-linux-package|controller-windows-package) ;;
+        controller-macos-package|controller-linux-package|controller-windows-package|controller-android-package) ;;
         *)
             echo "error: $platform run $run_id is workflow '$name', not a controller package" >&2
             exit 1
@@ -56,6 +57,8 @@ fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-aarch64-unsigned PRNS-Cont
 fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-x86_64-unsigned PRNS-Controller-linux-x86_64-unsigned.tar.gz
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-aarch64-unsigned PRNS-Controller-windows-aarch64-unsigned.zip
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-x86_64-unsigned PRNS-Controller-windows-x86_64-unsigned.zip
+fetch_one android "$ANDROID_RUN_ID" PRNS-Controller-android-aarch64-unsigned PRNS-Controller-android-aarch64-unsigned.apk
+fetch_one android "$ANDROID_RUN_ID" PRNS-Controller-android-armv7-unsigned PRNS-Controller-android-armv7-unsigned.apk
 
 # Compress-Archive on Windows stores backslash paths. Verify inside the zip.
 verify_windows_flash() {
@@ -85,4 +88,16 @@ PY
 verify_windows_flash "$out/windows/PRNS-Controller-windows-aarch64-unsigned.zip"
 verify_windows_flash "$out/windows/PRNS-Controller-windows-x86_64-unsigned.zip"
 
-echo "unsigned six-way matrix matches $PRNS_SHA"
+for apk in \
+    "$out/android/PRNS-Controller-android-aarch64-unsigned.apk" \
+    "$out/android/PRNS-Controller-android-armv7-unsigned.apk"
+do
+    size="$(wc -c <"$apk" | tr -d ' ')"
+    if [[ "$size" -lt 1_000_000 ]]; then
+        echo "error: $apk is only $size bytes" >&2
+        exit 1
+    fi
+    echo "$apk: $size bytes"
+done
+
+echo "unsigned desktop six-way + Android two-way matrix matches $PRNS_SHA"

@@ -20,7 +20,7 @@ Branch names are local to this repo (Ken’s Prns `trunk` is unrelated). Do not 
 
 ## Unsigned artifact contract (Prns → this repo)
 
-Canonical unsigned packages (built in Prns), one archive per OS × CPU:
+Canonical unsigned packages (built in Prns), one archive per OS × CPU (plus Android APKs):
 
 | Platform | Artifact name | Archive |
 |----------|---------------|---------|
@@ -30,20 +30,23 @@ Canonical unsigned packages (built in Prns), one archive per OS × CPU:
 | Linux x86_64 | `PRNS-Controller-linux-x86_64-unsigned` | `PRNS-Controller-linux-x86_64-unsigned.tar.gz` |
 | Windows ARM64 | `PRNS-Controller-windows-aarch64-unsigned` | `PRNS-Controller-windows-aarch64-unsigned.zip` |
 | Windows x86_64 | `PRNS-Controller-windows-x86_64-unsigned` | `PRNS-Controller-windows-x86_64-unsigned.zip` |
+| Android arm64-v8a | `PRNS-Controller-android-aarch64-unsigned` | `PRNS-Controller-android-aarch64-unsigned.apk` |
+| Android armeabi-v7a | `PRNS-Controller-android-armv7-unsigned` | `PRNS-Controller-android-armv7-unsigned.apk` |
 
 Produced by Prns workflows (fork-side today), each uploading **both** arches from one run:
 
 - `controller-macos-package` (`macos-14` + `macos-15-intel`)
 - `controller-linux-package` (`ubuntu-latest` + `ubuntu-24.04-arm`)
 - `controller-windows-package` (`windows-latest` + `windows-11-arm`)
+- `controller-android-package` (`ubuntu-latest`, aarch64 + armv7; **no Flash**)
 
-**Pin:** one Prns commit SHA, plus the three successful Actions run IDs that
+**Pin:** one Prns commit SHA, plus the four successful Actions run IDs that
 uploaded the artifacts above **for that same SHA**. Record the SHA, run IDs,
 and SHA-256 digests in every Release.
 
 When `sign_macos=true`, the release attaches `PRNS-Controller-macos-aarch64.zip`
 and `PRNS-Controller-macos-x86_64.zip` (Developer ID + notarized) instead of the
-unsigned macOS zips.
+unsigned macOS zips. Android APKs stay unsigned (sideload / `adb install`).
 
 ## Open from the 2026-09-18 trial
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       prns_sha:
-        description: Prns commit SHA that produced all three unsigned artifacts
+        description: Prns commit SHA that produced all unsigned artifacts
         required: true
         type: string
       macos_run_id:
@@ -17,6 +17,10 @@ on:
         type: string
       windows_run_id:
         description: tonycowan/Prns run ID for controller-windows-package
+        required: true
+        type: string
+      android_run_id:
+        description: tonycowan/Prns run ID for controller-android-package
         required: true
         type: string
       tag:
@@ -63,6 +67,7 @@ jobs:
           MACOS_RUN_ID: ${{ inputs.macos_run_id }}
           LINUX_RUN_ID: ${{ inputs.linux_run_id }}
           WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          ANDROID_RUN_ID: ${{ inputs.android_run_id }}
         run: bash scripts/fetch-unsigned.sh
 
       - name: Sign and notarize macOS
@@ -106,6 +111,7 @@ jobs:
           MACOS_RUN_ID: ${{ inputs.macos_run_id }}
           LINUX_RUN_ID: ${{ inputs.linux_run_id }}
           WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          ANDROID_RUN_ID: ${{ inputs.android_run_id }}
           SIGN_MACOS: ${{ inputs.sign_macos }}
         run: |
           notes="$(mktemp)"
@@ -117,6 +123,7 @@ jobs:
             echo "- macOS: $MACOS_RUN_ID"
             echo "- Linux: $LINUX_RUN_ID"
             echo "- Windows: $WINDOWS_RUN_ID"
+            echo "- Android: $ANDROID_RUN_ID"
             echo
             if [ "$SIGN_MACOS" = "true" ]; then
               echo "macOS apps (aarch64 + x86_64) are Developer ID-signed and notarized."
@@ -124,7 +131,9 @@ jobs:
               echo "macOS apps are **unsigned**. Remove the quarantine attribute or use right-click → Open."
             fi
             echo
-            echo "Each OS ships both **aarch64** and **x86_64** archives."
+            echo "Desktop OS archives ship both **aarch64** and **x86_64**."
+            echo "Android ships unsigned APKs for **aarch64** (arm64-v8a) and **armv7** (armeabi-v7a)."
+            echo "Flash is desktop-only; Android packages are remote-control only."
             echo
             echo '```'
             cat dist/SHA256SUMS
