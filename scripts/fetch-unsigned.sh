@@ -58,7 +58,6 @@ fetch_one linux "$LINUX_RUN_ID" PRNS-Controller-linux-x86_64-unsigned PRNS-Contr
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-aarch64-unsigned PRNS-Controller-windows-aarch64-unsigned.zip
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-x86_64-unsigned PRNS-Controller-windows-x86_64-unsigned.zip
 fetch_one android "$ANDROID_RUN_ID" PRNS-Controller-android-aarch64-unsigned PRNS-Controller-android-aarch64-unsigned.apk
-fetch_one android "$ANDROID_RUN_ID" PRNS-Controller-android-armv7-unsigned PRNS-Controller-android-armv7-unsigned.apk
 
 # Compress-Archive on Windows stores backslash paths. Verify inside the zip.
 verify_windows_flash() {
@@ -88,16 +87,12 @@ PY
 verify_windows_flash "$out/windows/PRNS-Controller-windows-aarch64-unsigned.zip"
 verify_windows_flash "$out/windows/PRNS-Controller-windows-x86_64-unsigned.zip"
 
-for apk in \
-    "$out/android/PRNS-Controller-android-aarch64-unsigned.apk" \
-    "$out/android/PRNS-Controller-android-armv7-unsigned.apk"
-do
-    size="$(wc -c <"$apk" | tr -d ' ')"
-    if [[ "$size" -lt 1_000_000 ]]; then
-        echo "error: $apk is only $size bytes" >&2
-        exit 1
-    fi
-    echo "$apk: $size bytes"
-done
+apk="$out/android/PRNS-Controller-android-aarch64-unsigned.apk"
+size="$(wc -c <"$apk" | tr -d ' ')"
+if [[ "$size" -lt 1_000_000 ]]; then
+    echo "error: $apk is only $size bytes" >&2
+    exit 1
+fi
+echo "$apk: $size bytes"
 
-echo "unsigned desktop six-way + Android two-way matrix matches $PRNS_SHA"
+echo "unsigned desktop six-way + Android aarch64 matrix matches $PRNS_SHA"

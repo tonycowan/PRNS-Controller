@@ -31,14 +31,13 @@ Canonical unsigned packages (built in Prns), one archive per OS × CPU (plus And
 | Windows ARM64 | `PRNS-Controller-windows-aarch64-unsigned` | `PRNS-Controller-windows-aarch64-unsigned.zip` |
 | Windows x86_64 | `PRNS-Controller-windows-x86_64-unsigned` | `PRNS-Controller-windows-x86_64-unsigned.zip` |
 | Android arm64-v8a | `PRNS-Controller-android-aarch64-unsigned` | `PRNS-Controller-android-aarch64-unsigned.apk` |
-| Android armeabi-v7a | `PRNS-Controller-android-armv7-unsigned` | `PRNS-Controller-android-armv7-unsigned.apk` |
 
-Produced by Prns workflows (fork-side today), each uploading **both** arches from one run:
+Produced by Prns workflows (fork-side today), each uploading **both** arches from one run (Android: aarch64 only):
 
 - `controller-macos-package` (`macos-14` + `macos-15-intel`)
 - `controller-linux-package` (`ubuntu-latest` + `ubuntu-24.04-arm`)
 - `controller-windows-package` (`windows-latest` + `windows-11-arm`)
-- `controller-android-package` (`ubuntu-latest`, aarch64 + armv7; **no Flash**)
+- `controller-android-package` (`ubuntu-latest`, aarch64; **no Flash**; Dioxus is 64-bit only)
 
 **Pin:** one Prns commit SHA, plus the four successful Actions run IDs that
 uploaded the artifacts above **for that same SHA**. Record the SHA, run IDs,
