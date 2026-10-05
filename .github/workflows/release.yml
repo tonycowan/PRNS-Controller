@@ -132,6 +132,7 @@ jobs:
             fi
             echo
             echo "Desktop OS archives ship both **aarch64** and **x86_64**."
+            echo "Each of those six builds also includes a \`prnsd\` for the same OS and architecture."
             echo "Android ships an unsigned APK for **aarch64** (arm64-v8a)."
             echo "Flash is desktop-only; Android packages are remote-control only."
             echo

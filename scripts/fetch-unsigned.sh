@@ -59,6 +59,29 @@ fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-aarch64-unsigned PRN
 fetch_one windows "$WINDOWS_RUN_ID" PRNS-Controller-windows-x86_64-unsigned PRNS-Controller-windows-x86_64-unsigned.zip
 fetch_one android "$ANDROID_RUN_ID" PRNS-Controller-android-aarch64-unsigned PRNS-Controller-android-aarch64-unsigned.apk
 
+fetch_prnsd() {
+    local platform="$1"
+    local run_id="$2"
+    local artifact="$3"
+    local archive="$4"
+    fetch_one "$platform" "$run_id" "$artifact" "$archive"
+    local path="$out/$platform/$archive"
+    local size
+    size="$(wc -c <"$path" | tr -d ' ')"
+    if [[ "$size" -lt 1000000 ]]; then
+        echo "error: $path is only $size bytes" >&2
+        exit 1
+    fi
+    echo "$path: $size bytes"
+}
+
+fetch_prnsd macos "$MACOS_RUN_ID" prnsd-macos-aarch64 prnsd-macos-aarch64
+fetch_prnsd macos "$MACOS_RUN_ID" prnsd-macos-x86_64 prnsd-macos-x86_64
+fetch_prnsd linux "$LINUX_RUN_ID" prnsd-linux-aarch64 prnsd-linux-aarch64
+fetch_prnsd linux "$LINUX_RUN_ID" prnsd-linux-x86_64 prnsd-linux-x86_64
+fetch_prnsd windows "$WINDOWS_RUN_ID" prnsd-windows-aarch64 prnsd-windows-aarch64.exe
+fetch_prnsd windows "$WINDOWS_RUN_ID" prnsd-windows-x86_64 prnsd-windows-x86_64.exe
+
 # Compress-Archive on Windows stores backslash paths. Verify inside the zip.
 verify_windows_flash() {
     local windows_zip="$1"
@@ -95,4 +118,4 @@ if [[ "$size" -lt 1_000_000 ]]; then
 fi
 echo "$apk: $size bytes"
 
-echo "unsigned desktop six-way + Android aarch64 matrix matches $PRNS_SHA"
+echo "unsigned desktop six-way + Android aarch64 + six prnsd binaries match $PRNS_SHA"
