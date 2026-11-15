@@ -44,7 +44,7 @@ permissions:
 jobs:
   prepare:
     name: fetch, verify, sign
-    runs-on: ${{ inputs.sign_macos == true && 'macos-14' || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.sign_macos == true && 'macos-15' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
